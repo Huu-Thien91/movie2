@@ -1,77 +1,86 @@
 <template>
-  <div class="user-management">
-    <h1>Quản lý Người Dùng</h1>
+  <div>
+    <button @click="goBack" class="back-button">← Quay lại</button>
+    <div class="user-management">
+      <h1>Quản lý Người Dùng</h1>
 
-    <!-- Danh sách người dùng -->
-    <div class="user-list">
-      <table>
-        <thead>
-          <tr>
-            <th>User ID</th>
-            <th>Username</th>
-            <th>Email</th>
-            <th>Trạng Thái</th>
-            <th>Hành Động</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="user in users" :key="user.id">
-            <td>{{ user.id }}</td>
-            <td>{{ user.username }}</td>
-            <td>{{ user.email }}</td>
-            <td :class="{ 'active': user.status === 'Hoạt động', 'blocked': user.status === 'Đã khóa' }">
-              {{ user.status }}
-            </td>
-            <td>
-              <button @click="viewUserDetails(user)" class="details-button">Xem Chi Tiết</button>
-              <button @click="toggleUserStatus(user)" class="toggle-button">
-                {{ user.status === 'Hoạt động' ? 'Khóa' : 'Mở khóa' }}
-              </button>
-            </td>
-          </tr>
-        </tbody>
-      </table>
-    </div>
+      <!-- Danh sách người dùng -->
+      <div class="user-list">
+        <table>
+          <thead>
+            <tr>
+              <th>User ID</th>
+              <th>Username</th>
+              <th>Email</th>
+              <th>Trạng Thái</th>
+              <th>Hành Động</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="user in users" :key="user.id">
+              <td>{{ user.id }}</td>
+              <td>{{ user.username }}</td>
+              <td>{{ user.email }}</td>
+              <td :class="{ 'active': user.status === 'Hoạt động', 'blocked': user.status === 'Đã khóa' }">
+                {{ user.status }}
+              </td>
+              <td>
+                <button @click="viewUserDetails(user)" class="details-button">Xem Chi Tiết</button>
+                <button @click="toggleUserStatus(user)" class="toggle-button">
+                  {{ user.status === 'Hoạt động' ? 'Khóa' : 'Mở khóa' }}
+                </button>
+              </td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
 
-    <!-- Chi tiết người dùng -->
-    <div v-if="selectedUser" class="user-details">
-      <h2>Chi Tiết Người Dùng</h2>
-      <p><strong>User ID:</strong> {{ selectedUser.id }}</p>
-      <p><strong>Username:</strong> {{ selectedUser.username }}</p>
-      <p><strong>Email:</strong> {{ selectedUser.email }}</p>
-      <p><strong>Trạng Thái:</strong> {{ selectedUser.status }}</p>
+      <!-- Chi tiết người dùng -->
+      <div v-if="selectedUser" class="user-details">
+        <h2>Chi Tiết Người Dùng</h2>
+        <p><strong>User ID:</strong> {{ selectedUser.id }}</p>
+        <p><strong>Username:</strong> {{ selectedUser.username }}</p>
+        <p><strong>Email:</strong> {{ selectedUser.email }}</p>
+        <p><strong>Trạng Thái:</strong> {{ selectedUser.status }}</p>
 
-      <!-- Lịch sử thanh toán -->
-      <h3>Lịch Sử Thanh Toán</h3>
-      <table>
-        <thead>
-          <tr>
-            <th>ID Giao Dịch</th>
-            <th>Số Tiền</th>
-            <th>Ngày Giao Dịch</th>
-            <th>Phương Thức</th>
-            <th>Trạng Thái</th>
-          </tr>
-        </thead>
-        <tbody>
-          <tr v-for="transaction in selectedUser.transactions" :key="transaction.id">
-            <td>{{ transaction.id }}</td>
-            <td>{{ transaction.amount }} VND</td>
-            <td>{{ transaction.date }}</td>
-            <td>{{ transaction.method }}</td>
-            <td :class="{ 'success': transaction.status === 'Thành công', 'failed': transaction.status === 'Thất bại' }">
-              {{ transaction.status }}
-            </td>
-          </tr>
-        </tbody>
-      </table>
-      <button @click="closeUserDetails" class="close-button">Đóng</button>
+        <!-- Lịch sử thanh toán -->
+        <h3>Lịch Sử Thanh Toán</h3>
+        <table>
+          <thead>
+            <tr>
+              <th>ID Giao Dịch</th>
+              <th>Số Tiền</th>
+              <th>Ngày Giao Dịch</th>
+              <th>Phương Thức</th>
+              <th>Trạng Thái</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr v-for="transaction in selectedUser.transactions" :key="transaction.id">
+              <td>{{ transaction.id }}</td>
+              <td>{{ transaction.amount }} VND</td>
+              <td>{{ transaction.date }}</td>
+              <td>{{ transaction.method }}</td>
+              <td
+                :class="{ 'success': transaction.status === 'Thành công', 'failed': transaction.status === 'Thất bại' }">
+                {{ transaction.status }}
+              </td>
+            </tr>
+          </tbody>
+        </table>
+        <button @click="closeUserDetails" class="close-button">Đóng</button>
+      </div>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue';
+import { useRouter } from 'vue-router';
+const router = useRouter();
+const goBack = () => {
+  router.go(-1);
+};
 
 // Danh sách người dùng mẫu
 const users = ref([
@@ -123,13 +132,27 @@ body {
   margin: 0;
 }
 
+.back-button {
+  margin: 20px;
+  background-color: #3498DB;
+  color: white;
+  padding: 10px 20px;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: background-color 0.3s ease;
+}
+
+.back-button:hover {
+  background-color: #2980B9;
+}
+
 .user-management {
-  max-width: 1000px;
-  margin: 20px auto;
-  padding: 20px;
-  background: white;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  background-color: #fff;
+  border-radius: 10px;
+  padding: 30px;
+  box-shadow: 0px 4px 8px rgba(0, 0, 0, 0.1);
+  animation: fadeIn 1s ease-in-out
 }
 
 h1 {
@@ -188,6 +211,18 @@ td.blocked {
 
 .toggle-button:hover {
   background-color: #d35400;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 .user-details {
