@@ -1,244 +1,170 @@
 <template>
-  <div class="container mt-5">
-    <div class="row">
-      <!-- Tổng quan số lượng -->
-      <div class="col-lg-3 col-md-6 mb-4">
-        <div class="card shadow-lg rounded">
-          <div class="card-header bg-primary text-white text-center">
-            <h5 class="card-title mb-0">Tổng Quan</h5>
-          </div>
-          <div class="card-body">
-            <ul class="list-group list-group-flush">
-              <li class="list-group-item">Tổng số người dùng: <strong>{{ totalUsers }}</strong></li>
-              <li class="list-group-item">Số lượng phim lẻ: <strong>{{ totalMovies }}</strong></li>
-              <li class="list-group-item">Số lượng phim bộ: <strong>{{ totalSeries }}</strong></li>
-              <li class="list-group-item">Số lượng tập phim: <strong>{{ totalEpisodes }}</strong></li>
-              <li class="list-group-item">Số lượng diễn viên: <strong>{{ totalActors }}</strong></li>
-              <li class="list-group-item">Số lượng đạo diễn: <strong>{{ totalDirectors }}</strong></li>
-              <li class="list-group-item">Số lượng thể loại: <strong>{{ totalGenres }}</strong></li>
-              <li class="list-group-item">Tổng doanh thu: <strong>{{ totalRevenue }} VNĐ</strong></li>
-            </ul>
-          </div>
-        </div>
+  <div class="overview-dashboard">
+    <h1>Tổng Quan</h1>
+    <div class="statistics-cards">
+      <!-- Số liệu thống kê chính -->
+      <div class="card" v-for="stat in statistics" :key="stat.title">
+        <h3>{{ stat.title }}</h3>
+        <p>{{ stat.value }}</p>
+        <small>{{ stat.description }}</small>
+      </div>
+    </div>
+
+    <div class="charts-section">
+      <!-- Biểu đồ lượt xem -->
+      <div class="chart">
+        <h2>Lượt Xem Theo Thời Gian</h2>
+        <canvas id="viewChart"></canvas>
       </div>
 
-      <!-- Biểu đồ thống kê -->
-      <div class="col-lg-9 col-md-6">
-        <div class="row">
-          <!-- Biểu đồ lượt xem theo thời gian -->
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-lg rounded">
-              <div class="card-header bg-success text-white">
-                <h5 class="card-title mb-0">Lượt Xem Phim Theo Thời Gian</h5>
-              </div>
-              <div class="card-body">
-                <LineChart :chartData="viewData" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Biểu đồ doanh thu theo tháng -->
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-lg rounded">
-              <div class="card-header bg-warning text-white">
-                <h5 class="card-title mb-0">Doanh Thu Theo Tháng</h5>
-              </div>
-              <div class="card-body">
-                <BarChart :chartData="revenueData" />
-              </div>
-            </div>
-          </div>
-
-          <!-- Biểu đồ số lượng người dùng mới -->
-          <div class="col-lg-6 col-md-12 mb-4">
-            <div class="card shadow-lg rounded">
-              <div class="card-header bg-info text-white">
-                <h5 class="card-title mb-0">Số Lượng Người Dùng Mới</h5>
-              </div>
-              <div class="card-body">
-                <LineChart :chartData="newUsersData" />
-              </div>
-            </div>
-          </div>
-        </div>
+      <!-- Biểu đồ doanh thu -->
+      <div class="chart">
+        <h2>Doanh Thu Theo Tháng</h2>
+        <canvas id="revenueChart"></canvas>
       </div>
     </div>
   </div>
 </template>
 
-<script>
-// Import các thành phần cần thiết từ vue-chartjs và chart.js
-import { BarElement, CategoryScale, Chart as ChartJS, Legend, LinearScale, LineElement, Title, Tooltip } from 'chart.js';
-import { Bar, Line } from 'vue-chartjs';
+<script setup>
+import { ref, onMounted } from 'vue';
+import Chart from 'chart.js/auto';
 
-// Đăng ký các thành phần của chart.js
-ChartJS.register(Title, Tooltip, Legend, LineElement, BarElement, CategoryScale, LinearScale);
+// Dữ liệu thống kê chính
+const statistics = ref([
+  { title: 'Tổng Người Dùng', value: 10000, description: 'Người dùng đã đăng ký' },
+  { title: 'Người Dùng VIP', value: 1500, description: 'Người dùng VIP đang hoạt động' },
+  { title: 'Số Lượng Phim', value: 500, description: 'Phim có sẵn trong hệ thống' },
+  { title: 'Tổng Lượt Xem', value: 200000, description: 'Lượt xem toàn hệ thống' },
+  { title: 'Đăng Ký Mới', value: 50, description: 'Hôm nay' },
+  { title: 'Doanh Thu Tháng', value: '100,000,000 VND', description: 'Trong tháng hiện tại' },
+]);
 
-export default {
-  name: 'Dashboard',
-  components: {
-    LineChart: {
-      name: 'LineChart',
-      components: { Line },
-      props: {
-        chartData: {
-          type: Object,
-          required: true
-        }
-      },
-      data() {
-        return {
-          chartOptions: {
-            responsive: true,
-            plugins: {
-              legend: {
-                position: 'top',
-              },
-              title: {
-                display: true,
-                text: 'Lượt Xem Phim Theo Thời Gian',
-              },
-            },
-            scales: {
-              x: {
-                beginAtZero: true
-              }
-            }
-          }
-        };
-      },
-      template: '<Line :data="chartData" :options="chartOptions" />'
+// Tạo biểu đồ
+const createCharts = () => {
+  const viewCtx = document.getElementById('viewChart').getContext('2d');
+  const revenueCtx = document.getElementById('revenueChart').getContext('2d');
+
+  // Biểu đồ lượt xem
+  new Chart(viewCtx, {
+    type: 'line',
+    data: {
+      labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+      datasets: [
+        {
+          label: 'Lượt Xem',
+          data: [5000, 10000, 15000, 20000, 25000],
+          borderColor: '#3498db',
+          backgroundColor: 'rgba(52, 152, 219, 0.2)',
+          fill: true,
+        },
+      ],
     },
-    BarChart: {
-      name: 'BarChart',
-      components: { Bar },
-      props: {
-        chartData: {
-          type: Object,
-          required: true
-        }
-      },
-      data() {
-        return {
-          chartOptions: {
-            responsive: true,
-            plugins: {
-              legend: {
-                position: 'top',
-              },
-              title: {
-                display: true,
-                text: 'Doanh Thu Theo Tháng',
-              },
-            },
-            scales: {
-              x: {
-                beginAtZero: true
-              }
-            }
-          }
-        };
-      },
-      template: '<Bar :data="chartData" :options="chartOptions" />'
-    }
-  },
-  data() {
-    return {
-      // Data for dashboard overview
-      totalUsers: 1200,
-      totalMovies: 450,
-      totalSeries: 150,
-      totalEpisodes: 1200,
-      totalActors: 500,
-      totalDirectors: 50,
-      totalGenres: 20,
-      totalRevenue: 2500000000,  // Example revenue
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+    },
+  });
 
-      // Data for charts
-      viewData: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-          {
-            label: 'Lượt xem',
-            data: [150, 200, 300, 350, 450, 500],
-            fill: true,
-            backgroundColor: 'rgba(75,192,192,0.4)',
-            borderColor: 'rgba(75,192,192,1)',
-            borderWidth: 2
-          }
-        ]
-      },
-
-      revenueData: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-          {
-            label: 'Doanh thu',
-            data: [300000, 400000, 500000, 600000, 700000, 800000],
-            backgroundColor: 'rgba(255,99,132,0.2)',
-            borderColor: 'rgba(255,99,132,1)',
-            borderWidth: 2
-          }
-        ]
-      },
-
-      newUsersData: {
-        labels: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'],
-        datasets: [
-          {
-            label: 'Người dùng mới',
-            data: [20, 30, 50, 80, 100, 120],
-            fill: true,
-            backgroundColor: 'rgba(153,102,255,0.2)',
-            borderColor: 'rgba(153,102,255,1)',
-            borderWidth: 2
-          }
-        ]
-      }
-    };
-  },
-  mounted() {
-    this.fetchDashboardData();
-  },
-  methods: {
-    // Hàm lấy dữ liệu từ API (sử dụng fetch, axios, v.v.)
-    async fetchDashboardData() {
-      const response = await fetch('https://api.example.com/dashboard');
-      const data = await response.json();
-
-      // Cập nhật dữ liệu tổng quan từ API
-      this.totalUsers = data.totalUsers;
-      this.totalMovies = data.totalMovies;
-      this.totalSeries = data.totalSeries;
-      this.totalEpisodes = data.totalEpisodes;
-      this.totalActors = data.totalActors;
-      this.totalDirectors = data.totalDirectors;
-      this.totalGenres = data.totalGenres;
-      this.totalRevenue = data.totalRevenue;
-
-      // Cập nhật dữ liệu biểu đồ từ API
-      this.viewData.datasets[0].data = data.viewData;
-      this.revenueData.datasets[0].data = data.revenueData;
-      this.newUsersData.datasets[0].data = data.newUsersData;
-    }
-  }
+  // Biểu đồ doanh thu
+  new Chart(revenueCtx, {
+    type: 'bar',
+    data: {
+      labels: ['Tháng 1', 'Tháng 2', 'Tháng 3', 'Tháng 4', 'Tháng 5'],
+      datasets: [
+        {
+          label: 'Doanh Thu (VND)',
+          data: [20000000, 30000000, 40000000, 50000000, 60000000],
+          backgroundColor: '#1abc9c',
+        },
+      ],
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: true } },
+    },
+  });
 };
+
+// Khởi tạo biểu đồ khi component được tải
+onMounted(() => {
+  createCharts();
+});
 </script>
 
 <style scoped>
-.card {
+body {
+  font-family: 'Arial', sans-serif;
+  background-color: #f9f9f9;
+  margin: 0;
+}
+
+.overview-dashboard {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 20px;
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+h1 {
+  text-align: center;
+  font-size: 28px;
+  color: #333;
   margin-bottom: 20px;
 }
 
-.card-header {
+.statistics-cards {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 40px;
+}
+
+.card {
+  padding: 20px;
+  background: #f4f6f9;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  text-align: center;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+.card h3 {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #2c3e50;
+}
+
+.card p {
+  font-size: 22px;
   font-weight: bold;
+  color: #3498db;
 }
 
-.card-body {
-  font-size: 14px;
+.card small {
+  font-size: 12px;
+  color: #7f8c8d;
 }
 
-.list-group-item {
-  font-size: 13px;
+.charts-section {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 40px;
+}
+
+.chart {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+.chart h2 {
+  font-size: 20px;
+  margin-bottom: 20px;
+  color: #34495e;
 }
 </style>
